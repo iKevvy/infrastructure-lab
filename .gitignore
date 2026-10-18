@@ -1,0 +1,35 @@
+# Working lab directory
+/week01/
+
+# Local Ansible inventories
+inventory.ini
+inventory.local.ini
+
+# Secrets and credentials
+*.pem
+*.key
+*.p12
+*.pfx
+*.secret
+*.vault
+*.retry
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+
+# SSH credentials
+id_rsa
+id_ed25519
+*.pub
+.ssh/
+
+# Python and editor files
+__pycache__/
+*.pyc
+.vscode/
+.idea/
+
+# Local backups
+*.bak
+*.swp
