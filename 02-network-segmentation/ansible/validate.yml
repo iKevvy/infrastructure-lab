@@ -1,0 +1,24 @@
+---
+- name: Project 002 - Validate firewall policy
+  hosts: all
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Copy experimental firewall configuration
+      ansible.builtin.copy:
+        src: ../firewall/ct105.nft
+        dest: /tmp/ct105-lab.nft
+        owner: root
+        group: root
+        mode: '0600'
+
+    - name: Check nftables configuration
+      ansible.builtin.command:
+        cmd: /usr/sbin/nft -c -f /tmp/ct105-lab.nft
+      register: nft_check
+      changed_when: false
+
+    - name: Report validation result
+      ansible.builtin.debug:
+        msg: "Firewall syntax validation passed."

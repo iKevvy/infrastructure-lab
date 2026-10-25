@@ -1,0 +1,57 @@
+---
+- name: Project 002 - Firewall deployment preflight
+  hosts: all
+  gather_facts: false
+  become: true
+
+  vars:
+    firewall_file: /tmp/ct105-lab.nft
+
+  tasks:
+    - name: Verify target address
+      ansible.builtin.assert:
+        that:
+          - inventory_hostname == "10.77.105.105"
+        fail_msg: "Unexpected target. Deployment aborted."
+
+    - name: Verify experimental table is absent
+      ansible.builtin.command:
+        cmd: /usr/sbin/nft list table ip ct105_lab
+      register: table_check
+      failed_when: false
+      changed_when: false
+
+    - name: Refuse existing experimental firewall
+      ansible.builtin.assert:
+        that:
+          - table_check.rc != 0
+          - "'No such file or directory' in table_check.stderr"
+          - "'No such file or directory' in table_check.stderr"
+
+    - name: Copy firewall configuration
+      ansible.builtin.copy:
+        src: ../firewall/ct105.nft
+        dest: "{{ firewall_file }}"
+        owner: root
+        group: root
+        mode: '0600'
+
+    - name: Validate firewall syntax
+      ansible.builtin.command:
+        cmd: "/usr/sbin/nft -c -f {{ firewall_file }}"
+      changed_when: false
+
+    - name: Verify rollback script exists
+      ansible.builtin.stat:
+        path: /usr/local/sbin/ct105-firewall-rollback
+      register: rollback_script
+
+    - name: Assert rollback is executable
+      ansible.builtin.assert:
+        that:
+          - rollback_script.stat.exists
+          - rollback_script.stat.executable
+
+    - name: Report preflight success
+      ansible.builtin.debug:
+        msg: "Preflight passed. Firewall NOT activated."

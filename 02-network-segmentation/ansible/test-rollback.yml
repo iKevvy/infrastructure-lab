@@ -1,0 +1,51 @@
+---
+- name: Project 002 - Test automatic firewall rollback
+  hosts: all
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Check that rollback test table is absent
+      ansible.builtin.command:
+        cmd: /usr/sbin/nft list table inet ct105_rollback_test
+      register: existing_table
+      failed_when: false
+      changed_when: false
+
+    - name: Stop if test table already exists
+      ansible.builtin.assert:
+        that:
+          - existing_table.rc != 0
+        fail_msg: "Rollback test table already exists. Aborting."
+
+    - name: Create rollback script
+      ansible.builtin.copy:
+        dest: /usr/local/sbin/ct105-firewall-rollback-test
+        owner: root
+        group: root
+        mode: '0700'
+        content: |
+          #!/bin/sh
+          /usr/sbin/nft delete table inet ct105_rollback_test
+
+    - name: Create harmless test table
+      ansible.builtin.command:
+        cmd: /usr/sbin/nft add table inet ct105_rollback_test
+
+    - name: Schedule automatic rollback in 60 seconds
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/systemd-run
+          - --unit=ct105-rollback-test
+          - --on-active=60s
+          - /usr/local/sbin/ct105-firewall-rollback-test
+
+    - name: Confirm rollback timer is scheduled
+      ansible.builtin.command:
+        cmd: systemctl is-active ct105-rollback-test.timer
+      register: timer_status
+      changed_when: false
+
+    - name: Display rollback status
+      ansible.builtin.debug:
+        msg: "Rollback timer: {{ timer_status.stdout }}"

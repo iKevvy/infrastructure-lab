@@ -33,3 +33,6 @@ __pycache__/
 # Local backups
 *.bak
 *.swp
+
+# Project 002 temporary experiment logs
+/02-network-segmentation/evidence/*.log

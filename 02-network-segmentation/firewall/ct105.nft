@@ -1,0 +1,13 @@
+table ip ct105_lab {
+    chain input {
+        type filter hook input priority 10;
+        policy drop;
+
+        iifname "lo" accept
+        ct state established,related accept
+
+        ip saddr 10.77.105.104 tcp dport 22 accept
+        ip saddr 10.77.105.104 tcp dport 80 accept
+        ip saddr 10.77.105.104 ip protocol icmp accept
+    }
+}

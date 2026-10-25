@@ -1,0 +1,39 @@
+---
+- name: Project 002 - Start temporary TCP test listener
+  hosts: all
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Verify target
+      ansible.builtin.assert:
+        that:
+          - inventory_hostname == "10.77.105.105"
+
+    - name: Check port 8088 is unused
+      ansible.builtin.shell: |
+        if ss -lnt '( sport = :8088 )' | grep -q LISTEN; then
+          echo "Port 8088 already in use"
+          exit 1
+        fi
+      changed_when: false
+
+    - name: Start temporary HTTP listener
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/systemd-run
+          - --unit=ct105-test-http-8088
+          - --property=RuntimeMaxSec=600
+          - /usr/bin/python3
+          - -m
+          - http.server
+          - "8088"
+          - --bind
+          - 10.77.105.105
+
+    - name: Verify listener is active
+      ansible.builtin.command:
+        cmd: systemctl is-active ct105-test-http-8088.service
+      register: listener
+      changed_when: false
+      failed_when: listener.stdout != "active"

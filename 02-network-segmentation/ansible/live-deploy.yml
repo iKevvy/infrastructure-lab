@@ -1,0 +1,68 @@
+---
+- name: Project 002 - Controlled firewall deployment
+  hosts: all
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Verify target
+      ansible.builtin.assert:
+        that:
+          - inventory_hostname == "10.77.105.105"
+
+    - name: Check experimental table
+      ansible.builtin.command:
+        cmd: /usr/sbin/nft list table ip ct105_lab
+      register: existing
+      failed_when: false
+      changed_when: false
+
+    - name: Refuse deployment if table exists
+      ansible.builtin.assert:
+        that:
+          - existing.rc != 0
+          - "'No such file or directory' in existing.stderr"
+
+    - name: Validate firewall file
+      ansible.builtin.command:
+        cmd: /usr/sbin/nft -c -f /tmp/ct105-lab.nft
+      changed_when: false
+
+    - name: Verify rollback script
+      ansible.builtin.command:
+        cmd: cat /usr/local/sbin/ct105-firewall-rollback
+      register: rollback
+      changed_when: false
+
+    - name: Confirm rollback targets correct table
+      ansible.builtin.assert:
+        that:
+          - "'nft delete table ip ct105_lab' in rollback.stdout"
+
+    - name: Schedule independent 60-second rollback
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/systemd-run
+          - --unit=ct105-live-rollback-001
+          - --on-active=60s
+          - /usr/local/sbin/ct105-firewall-rollback
+
+    - name: Verify rollback timer is active
+      ansible.builtin.command:
+        cmd: systemctl is-active ct105-live-rollback-001.timer
+      register: timer
+      changed_when: false
+      failed_when: timer.stdout != "active"
+
+    - name: Activate experimental IPv4 firewall
+      ansible.builtin.command:
+        cmd: /usr/sbin/nft -f /tmp/ct105-lab.nft
+
+    - name: Confirm experimental table exists
+      ansible.builtin.command:
+        cmd: /usr/sbin/nft list table ip ct105_lab
+      changed_when: false
+
+    - name: Report deployment
+      ansible.builtin.debug:
+        msg: "Firewall activated. Automatic rollback armed."

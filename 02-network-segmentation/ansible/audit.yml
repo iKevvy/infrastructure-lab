@@ -1,0 +1,44 @@
+---
+- name: Project 002 - Network Security Baseline
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Collect network interfaces
+      ansible.builtin.command: ip -br addr
+      register: interfaces
+      changed_when: false
+
+    - name: Collect IPv4 routes
+      ansible.builtin.command: ip -4 route
+      register: ipv4_routes
+      changed_when: false
+
+    - name: Collect IPv6 routes
+      ansible.builtin.command: ip -6 route
+      register: ipv6_routes
+      changed_when: false
+
+    - name: Collect listening services
+      ansible.builtin.command: ss -lntup
+      register: listening
+      changed_when: false
+
+    - name: Check IPv4 forwarding
+      ansible.builtin.command: cat /proc/sys/net/ipv4/ip_forward
+      register: forwarding
+      changed_when: false
+
+    - name: Display network audit
+      ansible.builtin.debug:
+        msg:
+          - "=== INTERFACES ==="
+          - "{{ interfaces.stdout }}"
+          - "=== IPv4 ROUTES ==="
+          - "{{ ipv4_routes.stdout }}"
+          - "=== IPv6 ROUTES ==="
+          - "{{ ipv6_routes.stdout }}"
+          - "=== LISTENING SERVICES ==="
+          - "{{ listening.stdout }}"
+          - "=== IPv4 FORWARDING ==="
+          - "{{ forwarding.stdout }}"

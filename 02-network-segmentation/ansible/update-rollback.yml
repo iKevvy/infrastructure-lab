@@ -1,0 +1,26 @@
+---
+- name: Project 002 - Update IPv4 firewall rollback
+  hosts: all
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Install IPv4 firewall rollback script
+      ansible.builtin.copy:
+        dest: /usr/local/sbin/ct105-firewall-rollback
+        owner: root
+        group: root
+        mode: '0700'
+        content: |
+          #!/bin/sh
+          /usr/sbin/nft delete table ip ct105_lab 2>/dev/null || true
+
+    - name: Verify rollback script contents
+      ansible.builtin.command:
+        cmd: cat /usr/local/sbin/ct105-firewall-rollback
+      register: rollback
+      changed_when: false
+
+    - name: Display rollback script
+      ansible.builtin.debug:
+        var: rollback.stdout_lines
