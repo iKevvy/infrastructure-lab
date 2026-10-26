@@ -20,6 +20,7 @@ Develop practical infrastructure engineering skills through repeatable deploymen
 | Project | Topic | Status |
 |---------|-------|--------|
 | 001 | [Automated Linux Server Deployment with Ansible](01-ansible-linux-deployment/) | Completed |
+| 002 | [Network Segmentation & Firewall Engineering](02-network-segmentation/) | Completed |
 
 ## Engineering Methodology
 
